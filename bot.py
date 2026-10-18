@@ -19,8 +19,8 @@ with open(CONFIG_PATH, "r") as f:
 BOT_TOKEN = config.get("bot_token", os.environ.get("BOT_TOKEN", ""))
 OWNER_ID = config.get("owner_id", 6416848944)
 WEBSITE_URL = config.get("website_url", "")
-LOGIN_URL = config.get("login_url", "")
-NAME_POOL = config.get("name_pool", ["user"])
+NAME_POOL = config.get("name_pool", ["John Doe"])
+REFERRAL_CODE = config.get("referral_code", "")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,11 +43,16 @@ def save_users(users):
 
 users = load_users()
 
-def generate_username():
-    """Generate a random username from name pool."""
-    name = random.choice(NAME_POOL)
-    number = random.randint(100, 999)
-    return f"{name.lower()}_{number}"
+def generate_full_name():
+    """Get random full name from pool."""
+    return random.choice(NAME_POOL)
+
+def generate_phone():
+    """Generate a random phone number."""
+    prefixes = ["0803", "0806", "0813", "0816", "0903", "0906", "0703", "0706"]
+    prefix = random.choice(prefixes)
+    number = random.randint(10000000, 99999999)
+    return f"{prefix} {number}"
 
 def generate_email():
     """Generate a realistic-looking email."""
@@ -70,13 +75,17 @@ def generate_email():
     first = random.choice(first_names)
     last = random.choice(last_names)
     domain = random.choice(domains)
-    
-    # Random separator: nothing, dot, or number
     separator = random.choice(["", ".", "_", str(random.randint(1, 99))])
     
     return f"{first}{separator}{last}@{domain}"
 
-def signup_on_website(username, email="", password=""):
+def generate_password():
+    """Generate a random password."""
+    chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%"
+    length = random.randint(10, 14)
+    return "".join(random.choice(chars) for _ in range(length))
+
+def signup_on_website(full_name, phone, email, password):
     """Use browser to sign up on the website."""
     try:
         with sync_playwright() as p:
@@ -84,34 +93,35 @@ def signup_on_website(username, email="", password=""):
             page = browser.new_page()
             
             page.goto(WEBSITE_URL, timeout=30000)
+            page.wait_for_timeout(2000)
             
-            # Fill signup form
-            username_selector = f"input[name='{config.get('username_field', 'username')}'], input#username, input[type='text']"
-            page.fill(username_selector, username)
+            # Fill Full name
+            page.fill(f"input[placeholder*='Full name'], input[name*='name'], input#name", full_name)
             
-            if email:
-                email_selector = f"input[name='{config.get('email_field', 'email')}'], input#email, input[type='email']"
+            # Fill Phone number
+            page.fill(f"input[placeholder*='Phone'], input[name*='phone'], input[type='tel']", phone)
+            
+            # Fill Email
+            page.fill(f"input[placeholder*='Email'], input[name*='email'], input[type='email']", email)
+            
+            # Fill Password
+            page.fill(f"input[placeholder*='Password'], input[name*='password'], input[type='password']", password)
+            
+            # Fill Referral code if present
+            if REFERRAL_CODE:
                 try:
-                    page.fill(email_selector, email)
+                    page.fill(f"input[placeholder*='Referral'], input[name*='referral']", REFERRAL_CODE)
                 except Exception:
                     pass
             
-            if password:
-                password_selector = f"input[name='{config.get('password_field', 'password')}'], input#password, input[type='password']"
-                try:
-                    page.fill(password_selector, password)
-                except Exception:
-                    pass
-            
-            # Click submit
-            submit_selector = config.get("submit_button", "button[type='submit']")
-            page.click(submit_selector)
+            # Click Create account button
+            page.click(f"button:has-text('Create account'), button[type='submit']")
             
             # Wait for response
-            page.wait_for_timeout(3000)
+            page.wait_for_timeout(5000)
             
             browser.close()
-            return True, "Account created successfully!"
+            return True, "Account created!"
             
     except Exception as e:
         return False, f"Error: {str(e)}"
@@ -125,53 +135,44 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🤖 *Signup Bot*\n\n"
         "Commands:\n"
-        "/newuser - Generate username & signup\n"
-        "/signup <username> - Custom username\n"
-        "/list - View all signed up users\n"
-        "/config - View current settings\n"
-        "/seturl <url> - Change website URL\n"
-        "/test - Test browser connection",
+        "/newuser - Auto create account\n"
+        "/list - View all accounts\n"
+        "/test - Test browser connection\n"
+        "/seturl <url> - Change website URL",
         parse_mode="Markdown"
     )
 
 async def new_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Auto-generate username and signup."""
+    """Auto-generate all details and signup."""
     if update.message.from_user.id != OWNER_ID:
         return
     
-    username = generate_username()
+    await update.message.reply_text("🔄 Creating account...")
+    
+    full_name = generate_full_name()
+    phone = generate_phone()
     email = generate_email()
-    success, message = signup_on_website(username, email)
+    password = generate_password()
+    
+    success, message = signup_on_website(full_name, phone, email, password)
     
     if success:
-        users[username] = {"status": "active", "email": email, "method": "auto"}
+        users[email] = {
+            "full_name": full_name,
+            "phone": phone,
+            "password": password,
+            "status": "active"
+        }
         save_users(users)
         await update.message.reply_text(
             f"✅ *Account Created!*\n\n"
-            f"Username: `{username}`\n"
+            f"Name: {full_name}\n"
+            f"Phone: {phone}\n"
             f"Email: `{email}`\n"
-            f"Website: {WEBSITE_URL}",
+            f"Password: `{password}`\n"
+            f"Referral: `{REFERRAL_CODE}`",
             parse_mode="Markdown"
         )
-    else:
-        await update.message.reply_text(f"❌ {message}")
-
-async def signup_custom(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Signup with custom username."""
-    if update.message.from_user.id != OWNER_ID:
-        return
-    
-    if not context.args:
-        await update.message.reply_text("Usage: /signup <username>")
-        return
-    
-    username = context.args[0]
-    success, message = signup_on_website(username)
-    
-    if success:
-        users[username] = {"status": "active", "method": "custom"}
-        save_users(users)
-        await update.message.reply_text(f"✅ Account `{username}` created!", parse_mode="Markdown")
     else:
         await update.message.reply_text(f"❌ {message}")
 
@@ -181,29 +182,37 @@ async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     if not users:
-        await update.message.reply_text("No users signed up yet.")
+        await update.message.reply_text("No accounts yet.")
         return
     
-    msg = "📋 *Signed Up Users*\n\n"
-    for username, data in users.items():
-        msg += f"• {username} - {data.get('status', 'unknown')}\n"
+    msg = "📋 *Accounts*\n\n"
+    for email, data in users.items():
+        msg += f"• {data.get('full_name', 'Unknown')}\n"
+        msg += f"  📧 {email}\n"
+        msg += f"  📱 {data.get('phone', 'N/A')}\n\n"
     
-    msg += f"\nTotal: {len(users)} users"
+    msg += f"Total: {len(users)} accounts"
     await update.message.reply_text(msg, parse_mode="Markdown")
 
-async def show_config(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Show current config."""
+async def test_connection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Test browser connection."""
     if update.message.from_user.id != OWNER_ID:
         return
     
-    await update.message.reply_text(
-        f"⚙️ *Current Config*\n\n"
-        f"Website: {WEBSITE_URL}\n"
-        f"Login URL: {LOGIN_URL}\n"
-        f"Name pool: {len(NAME_POOL)} names\n"
-        f"Users signed up: {len(users)}",
-        parse_mode="Markdown"
-    )
+    await update.message.reply_text("🔄 Testing connection...")
+    
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(WEBSITE_URL, timeout=15000)
+            title = page.title()
+            browser.close()
+            await update.message.reply_text(
+                f"✅ Connected!\n\nWebsite: {WEBSITE_URL}\nTitle: {title}"
+            )
+    except Exception as e:
+        await update.message.reply_text(f"❌ Failed: {str(e)}")
 
 async def set_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Change website URL."""
@@ -211,7 +220,7 @@ async def set_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     if not context.args:
-        await update.message.reply_text("Usage: /seturl <new_url>")
+        await update.message.reply_text("Usage: /seturl <url>")
         return
     
     global WEBSITE_URL
@@ -222,28 +231,6 @@ async def set_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
         json.dump(config, f, indent=2)
     
     await update.message.reply_text(f"✅ URL updated: {WEBSITE_URL}")
-
-async def test_connection(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Test browser connection to website."""
-    if update.message.from_user.id != OWNER_ID:
-        return
-    
-    await update.message.reply_text("🔄 Testing browser connection...")
-    
-    try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            page.goto(WEBSITE_URL, timeout=15000)
-            title = page.title()
-            browser.close()
-            await update.message.reply_text(
-                f"✅ Connection successful!\n\n"
-                f"Website: {WEBSITE_URL}\n"
-                f"Page title: {title}"
-            )
-    except Exception as e:
-        await update.message.reply_text(f"❌ Connection failed: {str(e)}")
 
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -269,11 +256,9 @@ def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("newuser", new_user))
-    app.add_handler(CommandHandler("signup", signup_custom))
     app.add_handler(CommandHandler("list", list_users))
-    app.add_handler(CommandHandler("config", show_config))
-    app.add_handler(CommandHandler("seturl", set_url))
     app.add_handler(CommandHandler("test", test_connection))
+    app.add_handler(CommandHandler("seturl", set_url))
 
     threading.Thread(target=run_health_server, daemon=True).start()
 

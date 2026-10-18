@@ -1,17 +1,22 @@
 {
   "website_url": "https://yoursite.com/signup",
   "login_url": "https://yoursite.com/login",
-  "admin_url": "https://yoursite.com/admin",
-  "username_field": "username",
-  "password_field": "password",
-  "email_field": "email",
-  "submit_button": "button[type='submit']",
+  "full_name_field": "Full name",
+  "phone_field": "Phone number",
+  "email_field": "Email address",
+  "password_field": "Password",
+  "referral_field": "Referral code",
+  "referral_code": "0fc8fbfb",
+  "submit_button": "Create account",
   "name_pool": [
-    "Sadiq", "glory", "benita", "ada", "musa", "fatima",
-    "chinedu", "amara", "kemi", "tunde", "ngozi", "emeka",
-    "blessing", "yusuf", "chioma", "ibrahim", "zainab", "ope",
-    "daniel", "grace", "samuel", "maryam", "victor", "hauwa",
-    "john", "amina", "peter", "rachel", "michael", "esther"
+    "Muhammad Ibrahim", "John David", "Sarah Smith", "Ahmed Hassan",
+    "Mary Johnson", "Aliyu Bello", "Grace Williams", "Daniel Okonkwo",
+    "Esther Nwosu", "Michael Adeyemi", "Rachel Osei", "Ibrahim Musa",
+    "Fatima Ali", "Chinedu Eze", "Amara Obi", "Yusuf Kamara",
+    "Zainab Suleiman", "Emeka Nwachukwu", "Ngozi Eze", "Tunde Bakare",
+    "Kemi Adeleke", "Musa Danjuma", "Ada Obiora", "Sadiq Umar",
+    "Benita Okafor", "Glory Adebayo", "Blessing Etim", "Victor Idowu",
+    "Hauwa Abubakar", "Peter Obi"
   ],
   "bot_token": "YOUR_BOT_TOKEN_HERE",
   "owner_id": 6416848944
