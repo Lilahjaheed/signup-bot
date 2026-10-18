@@ -49,6 +49,12 @@ def generate_username():
     number = random.randint(100, 999)
     return f"{name.lower()}_{number}"
 
+def generate_email(username):
+    """Generate a random email for the username."""
+    domains = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com"]
+    domain = random.choice(domains)
+    return f"{username}@{domain}"
+
 def signup_on_website(username, email="", password=""):
     """Use browser to sign up on the website."""
     try:
@@ -113,14 +119,16 @@ async def new_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     username = generate_username()
-    success, message = signup_on_website(username)
+    email = generate_email(username)
+    success, message = signup_on_website(username, email)
     
     if success:
-        users[username] = {"status": "active", "method": "auto"}
+        users[username] = {"status": "active", "email": email, "method": "auto"}
         save_users(users)
         await update.message.reply_text(
             f"✅ *Account Created!*\n\n"
             f"Username: `{username}`\n"
+            f"Email: `{email}`\n"
             f"Website: {WEBSITE_URL}",
             parse_mode="Markdown"
         )
