@@ -1,0 +1,18 @@
+{
+  "website_url": "https://yoursite.com/signup",
+  "login_url": "https://yoursite.com/login",
+  "admin_url": "https://yoursite.com/admin",
+  "username_field": "username",
+  "password_field": "password",
+  "email_field": "email",
+  "submit_button": "button[type='submit']",
+  "name_pool": [
+    "Sadiq", "glory", "benita", "ada", "musa", "fatima",
+    "chinedu", "amara", "kemi", "tunde", "ngozi", "emeka",
+    "blessing", "yusuf", "chioma", "ibrahim", "zainab", "ope",
+    "daniel", "grace", "samuel", "maryam", "victor", "hauwa",
+    "john", "amina", "peter", "rachel", "michael", "esther"
+  ],
+  "bot_token": "YOUR_BOT_TOKEN_HERE",
+  "owner_id": 6416848944
+}
