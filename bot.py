@@ -49,11 +49,32 @@ def generate_username():
     number = random.randint(100, 999)
     return f"{name.lower()}_{number}"
 
-def generate_email(username):
-    """Generate a random email for the username."""
+def generate_email():
+    """Generate a realistic-looking email."""
+    first_names = [
+        "muhammad", "john", "david", "sarah", "ahmed", "mary",
+        "ali", "grace", "daniel", "esther", "michael", "rachel",
+        "ibrahim", "fatima", "chinedu", "amara", "yusuf", "zainab",
+        "emeka", "ngozi", "tunde", "kemi", "musa", "ada",
+        "sadiq", "benita", "glory", "blessing", "victor", "hauwa"
+    ]
+    last_names = [
+        "muhammad", "smith", "johnson", "williams", "brown", "jones",
+        "garcia", "miller", "davis", "wilson", "anderson", "taylor",
+        "thomas", "moore", "martin", "jackson", "white", "harris",
+        "clark", "lewis", "okonkwo", "adeyemi", "obinna", "nwosu",
+        "ibrahim", "ali", "hassan", "osei", "mensah", "kamara"
+    ]
     domains = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com"]
+    
+    first = random.choice(first_names)
+    last = random.choice(last_names)
     domain = random.choice(domains)
-    return f"{username}@{domain}"
+    
+    # Random separator: nothing, dot, or number
+    separator = random.choice(["", ".", "_", str(random.randint(1, 99))])
+    
+    return f"{first}{separator}{last}@{domain}"
 
 def signup_on_website(username, email="", password=""):
     """Use browser to sign up on the website."""
@@ -119,7 +140,7 @@ async def new_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     username = generate_username()
-    email = generate_email(username)
+    email = generate_email()
     success, message = signup_on_website(username, email)
     
     if success:
